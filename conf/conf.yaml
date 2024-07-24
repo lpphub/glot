@@ -1,0 +1,7 @@
+mysql:
+  addr: 127.0.0.1:3306 #本地
+#  addr: host.docker.internal:3306 #容器连本机
+#  addr: mysql:3306 #容器连容器
+  database: saas
+  user: root
+  password: 123456
