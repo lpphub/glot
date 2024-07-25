@@ -7,7 +7,7 @@ import (
 	"glot/component/utils"
 	"glot/helper"
 	repo "glot/repository"
-	"glot/service/entity"
+	"glot/service/domain"
 )
 
 func Login(ctx *gin.Context, username, password string) (string, error) {
@@ -30,13 +30,13 @@ func Login(ctx *gin.Context, username, password string) (string, error) {
 	return utils.GenerateToken(us, utils.JwtSecret)
 }
 
-func GetLoginUser(ctx *gin.Context, uid int64) (*entity.LoginUser, error) {
+func GetLoginUser(ctx *gin.Context, uid int64) (*domain.LoginUser, error) {
 	var user repo.User
 	repo.DBWithTenant(ctx).Where("id=?", uid).Take(&user)
 	if user.ID > 0 {
 		roles := user.GetRoleCodes(ctx)
 		buttons := user.GetButtons(ctx)
-		return &entity.LoginUser{
+		return &domain.LoginUser{
 			Uid:      user.ID,
 			Username: user.Username,
 			Roles:    roles,

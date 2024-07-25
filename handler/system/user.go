@@ -5,12 +5,12 @@ import (
 	"github.com/lpphub/golib/render"
 	"github.com/lpphub/golib/zlog"
 	"glot/component/errcode"
-	"glot/service/entity"
+	"glot/service/domain"
 	syssrv "glot/service/system"
 )
 
 func PageListUser(ctx *gin.Context) {
-	var req entity.UserQuery
+	var req domain.UserQuery
 	if err := ctx.ShouldBind(&req); err != nil {
 		zlog.Warn(ctx, err.Error())
 		render.JsonWithError(ctx, errcode.ErrParamInvalid)
@@ -24,7 +24,7 @@ func PageListUser(ctx *gin.Context) {
 }
 
 func SaveUser(ctx *gin.Context) {
-	var req entity.User
+	var req domain.User
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		zlog.Error(ctx, err.Error())
 		render.JsonWithError(ctx, errcode.ErrParamInvalid)

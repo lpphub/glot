@@ -8,11 +8,11 @@ import (
 	"glot/helper"
 	repo "glot/repository"
 	"glot/service/consts"
-	"glot/service/entity"
+	"glot/service/domain"
 	"gorm.io/gorm"
 )
 
-func PageListMenu(ctx *gin.Context, param entity.PageQuery) (*entity.Pager, error) {
+func PageListMenu(ctx *gin.Context, param domain.PageQuery) (*domain.Pager, error) {
 	var (
 		total int64
 		list  []repo.Menu
@@ -25,18 +25,18 @@ func PageListMenu(ctx *gin.Context, param entity.PageQuery) (*entity.Pager, erro
 	if total > 0 {
 		_db.Scopes(repo.Paginate(param.Pn, param.Ps)).Find(&list)
 
-		voList := make([]*entity.MenuVO, 0, len(list))
+		voList := make([]*domain.MenuVO, 0, len(list))
 		for _, rsc := range list {
 			rscTree := rsc.GetMenuTree(ctx)
 			voList = append(voList, convertMenu(ctx, rscTree))
 		}
-		return entity.WrapPager(total, voList), nil
+		return domain.WrapPager(total, voList), nil
 	}
-	return entity.WrapPager(total, entity.EmptyList{}), nil
+	return domain.WrapPager(total, domain.EmptyList{}), nil
 }
 
-func convertMenu(ctx *gin.Context, tree *repo.MenuTree) *entity.MenuVO {
-	vo := &entity.MenuVO{
+func convertMenu(ctx *gin.Context, tree *repo.MenuTree) *domain.MenuVO {
+	vo := &domain.MenuVO{
 		ID:        tree.ID,
 		ParentID:  tree.ParentID,
 		MenuType:  tree.Mode,
@@ -54,10 +54,10 @@ func convertMenu(ctx *gin.Context, tree *repo.MenuTree) *entity.MenuVO {
 		return vo
 	}
 
-	buttons := make([]*entity.MenuButtonVO, 0)
+	buttons := make([]*domain.MenuButtonVO, 0)
 	for i, child := range children {
 		if child.Mode == consts.MenuButton {
-			buttons = append(buttons, &entity.MenuButtonVO{
+			buttons = append(buttons, &domain.MenuButtonVO{
 				ID:    child.ID,
 				Code:  child.Code,
 				Label: child.Name,
@@ -71,20 +71,20 @@ func convertMenu(ctx *gin.Context, tree *repo.MenuTree) *entity.MenuVO {
 	return vo
 }
 
-func GetMenuTree(ctx *gin.Context) ([]*entity.MenuTreeVO, error) {
+func GetMenuTree(ctx *gin.Context) ([]*domain.MenuTreeVO, error) {
 	var list []repo.Menu
 	helper.DB.WithContext(ctx).Model(repo.Menu{}).Where("mode in ? and status =?",
 		consts.RouteMenu, consts.StatusOn).Order("sort, id").Find(&list)
 
-	menuMap := make(map[int64]*entity.MenuTreeVO)
+	menuMap := make(map[int64]*domain.MenuTreeVO)
 	for _, menu := range list {
-		menuMap[menu.ID] = &entity.MenuTreeVO{
+		menuMap[menu.ID] = &domain.MenuTreeVO{
 			ID:    menu.ID,
 			PID:   menu.ParentID,
 			Label: menu.Name,
 		}
 	}
-	menuTree := make([]*entity.MenuTreeVO, 0)
+	menuTree := make([]*domain.MenuTreeVO, 0)
 	for _, node := range list {
 		if node.ParentID == 0 {
 			menuTree = append(menuTree, menuMap[node.ID])
@@ -96,14 +96,14 @@ func GetMenuTree(ctx *gin.Context) ([]*entity.MenuTreeVO, error) {
 	return menuTree, nil
 }
 
-func GetMenuButton(ctx *gin.Context) ([]*entity.MenuButtonVO, error) {
+func GetMenuButton(ctx *gin.Context) ([]*domain.MenuButtonVO, error) {
 	var list []repo.Menu
 	helper.DB.WithContext(ctx).Model(repo.Menu{}).Where("mode =? and status =?",
 		consts.MenuButton, consts.StatusOn).Find(&list)
 
-	buttons := make([]*entity.MenuButtonVO, 0)
+	buttons := make([]*domain.MenuButtonVO, 0)
 	for _, node := range list {
-		buttons = append(buttons, &entity.MenuButtonVO{
+		buttons = append(buttons, &domain.MenuButtonVO{
 			ID:    node.ID,
 			Label: node.Code,
 			Code:  node.Code,
@@ -112,7 +112,7 @@ func GetMenuButton(ctx *gin.Context) ([]*entity.MenuButtonVO, error) {
 	return buttons, nil
 }
 
-func SaveMenu(ctx *gin.Context, param entity.MenuVO) error {
+func SaveMenu(ctx *gin.Context, param domain.MenuVO) error {
 	// todo 参数校验
 	// 开启事务
 	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -215,7 +215,7 @@ func IsExistRoute(ctx *gin.Context, routeName string) (bool, error) {
 }
 
 // GetUserRouteMenus 查询用户授权的菜单路由
-func GetUserRouteMenus(ctx *gin.Context, uid int64) (*entity.UserRoute, error) {
+func GetUserRouteMenus(ctx *gin.Context, uid int64) (*domain.UserRoute, error) {
 	var user repo.User
 	repo.DBWithTenant(ctx).Where("id=?", uid).Take(&user)
 	if user.ID == 0 {
@@ -230,7 +230,7 @@ func GetUserRouteMenus(ctx *gin.Context, uid int64) (*entity.UserRoute, error) {
 	helper.DB.WithContext(ctx).Model(&repo.UserRole{}).Where("user_id=?", uid).Pluck("role_id", &roleIds)
 	filterRoutes := filterRoutesRole(ctx, routes, roleIds)
 
-	route := &entity.UserRoute{
+	route := &domain.UserRoute{
 		Home:   "home",
 		Routes: processRoutes(filterRoutes),
 	}
@@ -270,13 +270,13 @@ func filterRoutesRole(ctx *gin.Context, routes []repo.Menu, roleIds []int64) []r
 	return routes
 }
 
-func processRoutes(routes []repo.Menu) []*entity.RouteMenu {
-	routeMap := make(map[int64]*entity.RouteMenu)
+func processRoutes(routes []repo.Menu) []*domain.RouteMenu {
+	routeMap := make(map[int64]*domain.RouteMenu)
 	for _, route := range routes {
 		var meta repo.RouteMeta
 		_ = jsoniter.UnmarshalFromString(route.Meta, &meta)
 
-		routeMap[route.ID] = &entity.RouteMenu{
+		routeMap[route.ID] = &domain.RouteMenu{
 			ID:        route.ID,
 			Name:      route.RouteName,
 			Path:      route.RoutePath,
@@ -284,7 +284,7 @@ func processRoutes(routes []repo.Menu) []*entity.RouteMenu {
 			Meta:      meta,
 		}
 	}
-	rmList := make([]*entity.RouteMenu, 0)
+	rmList := make([]*domain.RouteMenu, 0)
 	for _, r := range routes {
 		if r.ParentID == 0 {
 			rmList = append(rmList, routeMap[r.ID])

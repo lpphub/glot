@@ -6,12 +6,12 @@ import (
 	"github.com/lpphub/golib/zlog"
 	"glot/component/errcode"
 	"glot/middleware"
-	"glot/service/entity"
+	"glot/service/domain"
 	syssrv "glot/service/system"
 )
 
 func SaveMenu(ctx *gin.Context) {
-	var req entity.MenuVO
+	var req domain.MenuVO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		zlog.Error(ctx, err.Error())
 		render.JsonWithError(ctx, errcode.ErrParamInvalid)
@@ -25,7 +25,7 @@ func SaveMenu(ctx *gin.Context) {
 }
 
 func PageListMenu(ctx *gin.Context) {
-	var req entity.PageQuery
+	var req domain.PageQuery
 	if err := ctx.ShouldBind(&req); err != nil {
 		zlog.Warn(ctx, err.Error())
 		render.JsonWithError(ctx, errcode.ErrParamInvalid)

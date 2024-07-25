@@ -8,12 +8,12 @@ import (
 	"glot/component/errcode"
 	repo "glot/repository"
 	"glot/service/consts"
-	"glot/service/entity"
+	"glot/service/domain"
 	syssrv "glot/service/system"
 )
 
 func PageListRole(ctx *gin.Context) {
-	var req entity.RoleQuery
+	var req domain.RoleQuery
 	if err := ctx.ShouldBind(&req); err != nil {
 		zlog.Warn(ctx, err.Error())
 		render.JsonWithError(ctx, errcode.ErrParamInvalid)

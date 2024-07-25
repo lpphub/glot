@@ -5,11 +5,11 @@ import (
 	"glot/helper"
 	"glot/middleware"
 	repo "glot/repository"
-	"glot/service/entity"
+	"glot/service/domain"
 	"gorm.io/gorm"
 )
 
-func PageListUser(ctx *gin.Context, param entity.UserQuery) (*entity.Pager, error) {
+func PageListUser(ctx *gin.Context, param domain.UserQuery) (*domain.Pager, error) {
 	var (
 		total int64
 		list  []repo.User
@@ -41,20 +41,20 @@ func PageListUser(ctx *gin.Context, param entity.UserQuery) (*entity.Pager, erro
 	if total > 0 {
 		_db.Order("id desc").Scopes(repo.Paginate(param.Pn, param.Ps)).Find(&list)
 
-		userList := make([]entity.User, 0)
+		userList := make([]domain.User, 0)
 		for _, user := range list {
 			roles := user.GetRoleCodes(ctx)
-			userList = append(userList, entity.User{
+			userList = append(userList, domain.User{
 				User:  user,
 				Roles: roles,
 			})
 		}
-		return entity.WrapPager(total, userList), nil
+		return domain.WrapPager(total, userList), nil
 	}
-	return entity.WrapPager(total, entity.EmptyList{}), nil
+	return domain.WrapPager(total, domain.EmptyList{}), nil
 }
 
-func SaveUser(ctx *gin.Context, param entity.User) error {
+func SaveUser(ctx *gin.Context, param domain.User) error {
 	// 开启事务
 	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		user := param.User

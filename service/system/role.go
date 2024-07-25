@@ -6,11 +6,11 @@ import (
 	"glot/helper"
 	repo "glot/repository"
 	"glot/service/consts"
-	"glot/service/entity"
+	"glot/service/domain"
 	"gorm.io/gorm"
 )
 
-func PageListRole(ctx *gin.Context, param entity.RoleQuery) (*entity.Pager, error) {
+func PageListRole(ctx *gin.Context, param domain.RoleQuery) (*domain.Pager, error) {
 	var (
 		total int64
 		list  []repo.Role
@@ -32,9 +32,9 @@ func PageListRole(ctx *gin.Context, param entity.RoleQuery) (*entity.Pager, erro
 	}
 	if total > 0 {
 		_db.Order("id desc").Scopes(repo.Paginate(param.Pn, param.Ps)).Find(&list)
-		return entity.WrapPager(total, list), nil
+		return domain.WrapPager(total, list), nil
 	}
-	return entity.WrapPager(total, entity.EmptyList{}), nil
+	return domain.WrapPager(total, domain.EmptyList{}), nil
 }
 
 func ListAllRole(ctx *gin.Context) ([]repo.Role, error) {

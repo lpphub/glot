@@ -1,4 +1,4 @@
-package entity
+package domain
 
 type PageQuery struct {
 	Pn int `json:"current" form:"current"`
