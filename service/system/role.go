@@ -62,17 +62,17 @@ func DelRole(ctx *gin.Context, ids []int64) error {
 	})
 }
 
-func GetRoleResource(ctx *gin.Context, roleId int64, rscTypes []int) (ids []int64, err error) {
-	var rscIds []int64
-	helper.DB.WithContext(ctx).Model(&repo.RoleResource{}).Where("role_id =?", roleId).Pluck("resource_id", &rscIds)
-	if len(rscIds) > 0 {
-		helper.DB.WithContext(ctx).Model(&repo.Resource{}).Where("id in ? and resource_type in ? and status=?",
-			rscIds, rscTypes, consts.StatusOn).Pluck("id", &ids)
+func GetRoleMenu(ctx *gin.Context, roleId int64, rscTypes []int) (ids []int64, err error) {
+	var menuIds []int64
+	helper.DB.WithContext(ctx).Model(&repo.RoleMenu{}).Where("role_id =?", roleId).Pluck("menu_id", &menuIds)
+	if len(menuIds) > 0 {
+		helper.DB.WithContext(ctx).Model(&repo.Menu{}).Where("id in ? and mode in ? and status=?",
+			menuIds, rscTypes, consts.StatusOn).Pluck("id", &ids)
 	}
 	return
 }
 
-func BindRoleResource(ctx *gin.Context, roleId int64, rscTypes []int, ids []int64) error {
+func BindRoleMenu(ctx *gin.Context, roleId int64, modes []int, ids []int64) error {
 	var role repo.Role
 	helper.DB.WithContext(ctx).Where("id =?", roleId).Take(&role)
 	if role.ID == 0 {
@@ -81,9 +81,9 @@ func BindRoleResource(ctx *gin.Context, roleId int64, rscTypes []int, ids []int6
 
 	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		//删掉原记录重新保存
-		delSql := "DELETE rr FROM tb_role_resource rr JOIN tb_resource r ON rr.resource_id = r.id " +
-			"WHERE role_id =? and r.resource_type in ?"
-		err := tx.Exec(delSql, roleId, rscTypes).Error
+		delSql := "DELETE rm FROM tb_role_menu rm JOIN tb_menu m ON rm.menu_id = m.id " +
+			"WHERE rm.role_id =? and m.mode in ?"
+		err := tx.Exec(delSql, roleId, modes).Error
 		if err != nil {
 			return err
 		}
@@ -91,11 +91,11 @@ func BindRoleResource(ctx *gin.Context, roleId int64, rscTypes []int, ids []int6
 		if len(ids) == 0 {
 			return nil
 		}
-		rrs := make([]repo.RoleResource, 0, len(ids))
+		rrs := make([]repo.RoleMenu, 0, len(ids))
 		for _, id := range ids {
-			rrs = append(rrs, repo.RoleResource{
-				RoleID:     roleId,
-				ResourceID: id,
+			rrs = append(rrs, repo.RoleMenu{
+				RoleID: roleId,
+				MenuID: id,
 			})
 		}
 		return tx.Create(&rrs).Error

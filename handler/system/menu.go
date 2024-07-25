@@ -11,7 +11,7 @@ import (
 )
 
 func SaveMenu(ctx *gin.Context) {
-	var req entity.Menu
+	var req entity.MenuVO
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		zlog.Error(ctx, err.Error())
 		render.JsonWithError(ctx, errcode.ErrParamInvalid)

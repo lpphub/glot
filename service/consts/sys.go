@@ -5,11 +5,11 @@ const (
 	StatusOn  = 1
 	StatusOff = 2
 
-	ResourceDir    = 1 //菜单目录
-	ResourceMenu   = 2 //菜单
-	ResourceButton = 3 //按钮
+	MenuDir    = 1 //目录
+	MenuOpt    = 2 //菜单
+	MenuButton = 3 //按钮
 )
 
 var (
-	MenuRoute = []int{ResourceDir, ResourceMenu}
+	RouteMenu = []int{MenuDir, MenuOpt}
 )

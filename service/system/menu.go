@@ -15,9 +15,9 @@ import (
 func PageListMenu(ctx *gin.Context, param entity.PageQuery) (*entity.Pager, error) {
 	var (
 		total int64
-		list  []repo.Resource
+		list  []repo.Menu
 	)
-	_db := helper.DB.WithContext(ctx).Model(repo.Resource{}).Where("parent_id = 0 and resource_type in ?", consts.MenuRoute)
+	_db := helper.DB.WithContext(ctx).Model(repo.Menu{}).Where("parent_id = 0 and mode in ?", consts.RouteMenu)
 
 	if err := _db.Count(&total).Error; err != nil {
 		return nil, err
@@ -25,9 +25,9 @@ func PageListMenu(ctx *gin.Context, param entity.PageQuery) (*entity.Pager, erro
 	if total > 0 {
 		_db.Scopes(repo.Paginate(param.Pn, param.Ps)).Find(&list)
 
-		voList := make([]entity.Menu, 0, len(list))
+		voList := make([]*entity.MenuVO, 0, len(list))
 		for _, rsc := range list {
-			rscTree := rsc.GetResourceTree(ctx)
+			rscTree := rsc.GetMenuTree(ctx)
 			voList = append(voList, convertMenu(ctx, rscTree))
 		}
 		return entity.WrapPager(total, voList), nil
@@ -35,11 +35,11 @@ func PageListMenu(ctx *gin.Context, param entity.PageQuery) (*entity.Pager, erro
 	return entity.WrapPager(total, entity.EmptyList{}), nil
 }
 
-func convertMenu(ctx *gin.Context, tree *repo.ResourceTree) entity.Menu {
-	vo := entity.Menu{
+func convertMenu(ctx *gin.Context, tree *repo.MenuTree) *entity.MenuVO {
+	vo := &entity.MenuVO{
 		ID:        tree.ID,
 		ParentID:  tree.ParentID,
-		MenuType:  tree.ResourceType,
+		MenuType:  tree.Mode,
 		MenuName:  tree.Name,
 		RouteName: tree.RouteName,
 		RoutePath: tree.RoutePath,
@@ -54,10 +54,10 @@ func convertMenu(ctx *gin.Context, tree *repo.ResourceTree) entity.Menu {
 		return vo
 	}
 
-	buttons := make([]entity.MenuButton, 0)
+	buttons := make([]*entity.MenuButtonVO, 0)
 	for i, child := range children {
-		if child.ResourceType == consts.ResourceButton {
-			buttons = append(buttons, entity.MenuButton{
+		if child.Mode == consts.MenuButton {
+			buttons = append(buttons, &entity.MenuButtonVO{
 				ID:    child.ID,
 				Code:  child.Code,
 				Label: child.Name,
@@ -71,20 +71,20 @@ func convertMenu(ctx *gin.Context, tree *repo.ResourceTree) entity.Menu {
 	return vo
 }
 
-func GetMenuTree(ctx *gin.Context) ([]*entity.MenuTree, error) {
-	var list []repo.Resource
-	helper.DB.WithContext(ctx).Model(repo.Resource{}).Where("resource_type in ? and status =?",
-		consts.MenuRoute, consts.StatusOn).Order("sort, id").Find(&list)
+func GetMenuTree(ctx *gin.Context) ([]*entity.MenuTreeVO, error) {
+	var list []repo.Menu
+	helper.DB.WithContext(ctx).Model(repo.Menu{}).Where("mode in ? and status =?",
+		consts.RouteMenu, consts.StatusOn).Order("sort, id").Find(&list)
 
-	menuMap := make(map[int64]*entity.MenuTree)
+	menuMap := make(map[int64]*entity.MenuTreeVO)
 	for _, menu := range list {
-		menuMap[menu.ID] = &entity.MenuTree{
+		menuMap[menu.ID] = &entity.MenuTreeVO{
 			ID:    menu.ID,
 			PID:   menu.ParentID,
 			Label: menu.Name,
 		}
 	}
-	menuTree := make([]*entity.MenuTree, 0)
+	menuTree := make([]*entity.MenuTreeVO, 0)
 	for _, node := range list {
 		if node.ParentID == 0 {
 			menuTree = append(menuTree, menuMap[node.ID])
@@ -96,14 +96,14 @@ func GetMenuTree(ctx *gin.Context) ([]*entity.MenuTree, error) {
 	return menuTree, nil
 }
 
-func GetMenuButton(ctx *gin.Context) ([]entity.MenuButton, error) {
-	var list []repo.Resource
-	helper.DB.WithContext(ctx).Model(repo.Resource{}).Where("resource_type =? and status =?",
-		consts.ResourceButton, consts.StatusOn).Find(&list)
+func GetMenuButton(ctx *gin.Context) ([]*entity.MenuButtonVO, error) {
+	var list []repo.Menu
+	helper.DB.WithContext(ctx).Model(repo.Menu{}).Where("mode =? and status =?",
+		consts.MenuButton, consts.StatusOn).Find(&list)
 
-	buttons := make([]entity.MenuButton, 0)
+	buttons := make([]*entity.MenuButtonVO, 0)
 	for _, node := range list {
-		buttons = append(buttons, entity.MenuButton{
+		buttons = append(buttons, &entity.MenuButtonVO{
 			ID:    node.ID,
 			Label: node.Code,
 			Code:  node.Code,
@@ -112,7 +112,7 @@ func GetMenuButton(ctx *gin.Context) ([]entity.MenuButton, error) {
 	return buttons, nil
 }
 
-func SaveMenu(ctx *gin.Context, param entity.Menu) error {
+func SaveMenu(ctx *gin.Context, param entity.MenuVO) error {
 	// todo 参数校验
 	// 开启事务
 	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -120,24 +120,24 @@ func SaveMenu(ctx *gin.Context, param entity.Menu) error {
 			meta       = param.RouteMeta
 			metaStr, _ = jsoniter.MarshalToString(meta)
 
-			base = repo.Resource{
-				ID:           param.ID,
-				ParentID:     param.ParentID,
-				ResourceType: param.MenuType,
-				Name:         param.MenuName,
-				RoutePath:    param.RoutePath,
-				RouteName:    param.RouteName,
-				Component:    param.Component,
-				Code:         param.RouteName,
-				Status:       param.Status,
-				Sort:         param.Order,
-				Meta:         metaStr,
+			base = repo.Menu{
+				ID:        param.ID,
+				ParentID:  param.ParentID,
+				Mode:      param.MenuType,
+				Name:      param.MenuName,
+				RoutePath: param.RoutePath,
+				RouteName: param.RouteName,
+				Component: param.Component,
+				Code:      param.RouteName,
+				Status:    param.Status,
+				Sort:      param.Order,
+				Meta:      metaStr,
 			}
 		)
 
 		if base.ID > 0 {
 			base.FitUpdated(ctx)
-			if err := tx.Model(&repo.Resource{ID: base.ID}).Updates(base).Error; err != nil {
+			if err := tx.Model(&repo.Menu{ID: base.ID}).Updates(base).Error; err != nil {
 				return err
 			}
 		} else {
@@ -150,25 +150,25 @@ func SaveMenu(ctx *gin.Context, param entity.Menu) error {
 		// 菜单下的按钮
 		if len(param.Buttons) == 0 {
 			var btnIds []int64
-			tx.Model(&repo.Resource{}).Where("parent_id =? and resource_type =?", base.ID, consts.ResourceButton).
+			tx.Model(&repo.Menu{}).Where("parent_id =? and mode =?", base.ID, consts.MenuButton).
 				Pluck("id", &btnIds)
 			if len(btnIds) > 0 {
-				tx.Delete(&repo.Resource{}, "id in ?", btnIds)
-				tx.Delete(&repo.RoleResource{}, "resource_id in ?", btnIds)
+				tx.Delete(&repo.Menu{}, "id in ?", btnIds)
+				tx.Delete(&repo.RoleMenu{}, "menu_id in ?", btnIds)
 			}
 		} else {
-			btnList := make([]*repo.Resource, 0, len(param.Buttons))
+			btnList := make([]*repo.Menu, 0, len(param.Buttons))
 			for _, btn := range param.Buttons {
 				var count int64
-				tx.Model(&repo.Resource{}).Where("code =? and parent_id =? and resource_type =?", btn.Code,
-					base.ID, consts.ResourceButton).Count(&count)
+				tx.Model(&repo.Menu{}).Where("code =? and parent_id =? and mode =?", btn.Code,
+					base.ID, consts.MenuButton).Count(&count)
 				if count == 0 {
-					mbtn := &repo.Resource{
-						ResourceType: consts.ResourceButton,
-						ParentID:     base.ID,
-						Name:         btn.Desc,
-						Code:         btn.Code,
-						Status:       consts.StatusOn,
+					mbtn := &repo.Menu{
+						Mode:     consts.MenuButton,
+						ParentID: base.ID,
+						Name:     btn.Desc,
+						Code:     btn.Code,
+						Status:   consts.StatusOn,
 					}
 					mbtn.FitCreated(ctx)
 					btnList = append(btnList, mbtn)
@@ -182,35 +182,35 @@ func SaveMenu(ctx *gin.Context, param entity.Menu) error {
 
 func DelMenu(ctx *gin.Context, ids []int64) error {
 	var count int64
-	helper.DB.WithContext(ctx).Model(&repo.Resource{}).Where("parent_id in ? and resource_type !=?", ids, consts.ResourceButton).Count(&count)
+	helper.DB.WithContext(ctx).Model(&repo.Menu{}).Where("parent_id in ? and mode in ?", ids, consts.RouteMenu).Count(&count)
 	if count > 0 { // 避免递归删除
 		return errcode.ErrToast.Sprintf("请先删除选中项下的子菜单")
 	}
 
 	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Delete(&repo.Resource{}, "id in ?", ids).Error; err != nil {
+		if err := tx.Delete(&repo.Menu{}, "id in ?", ids).Error; err != nil {
 			return err
 		}
-		if err := tx.Delete(&repo.RoleResource{}, "resource_id in ?", ids).Error; err != nil {
+		if err := tx.Delete(&repo.RoleMenu{}, "menu_id in ?", ids).Error; err != nil {
 			return err
 		}
 
 		// 删除菜单下的按钮
 		var btnIds []int64
-		tx.Model(&repo.Resource{}).Where("resource_type =? and parent_id in ?", consts.ResourceButton, ids).Pluck("id", &btnIds)
+		tx.Model(&repo.Menu{}).Where("mode =? and parent_id in ?", consts.MenuButton, ids).Pluck("id", &btnIds)
 		if len(btnIds) > 0 {
 
 		}
-		if err := tx.Delete(&repo.Resource{}, "id in ?", btnIds).Error; err != nil {
+		if err := tx.Delete(&repo.Menu{}, "id in ?", btnIds).Error; err != nil {
 			return err
 		}
-		return tx.Delete(&repo.RoleResource{}, "resource_id in ?", btnIds).Error
+		return tx.Delete(&repo.RoleMenu{}, "menu_id in ?", btnIds).Error
 	})
 }
 
 func IsExistRoute(ctx *gin.Context, routeName string) (bool, error) {
 	var count int64
-	helper.DB.WithContext(ctx).Model(&repo.Resource{}).Where("route_name = ?", routeName).Count(&count)
+	helper.DB.WithContext(ctx).Model(&repo.Menu{}).Where("route_name = ?", routeName).Count(&count)
 	return count > 0, nil
 }
 
@@ -222,9 +222,8 @@ func GetUserRouteMenus(ctx *gin.Context, uid int64) (*entity.UserRoute, error) {
 		return nil, errcode.ErrUserNotFound
 	}
 
-	var routes []repo.Resource
-	helper.DB.WithContext(ctx).Model(&repo.Resource{}).Where("resource_type in ? and status =?",
-		consts.MenuRoute, consts.StatusOn).Find(&routes)
+	var routes []repo.Menu
+	helper.DB.WithContext(ctx).Model(&repo.Menu{}).Where("mode in ? and status =?", consts.RouteMenu, consts.StatusOn).Find(&routes)
 
 	// 过滤角色限制
 	var roleIds []int64
@@ -238,25 +237,25 @@ func GetUserRouteMenus(ctx *gin.Context, uid int64) (*entity.UserRoute, error) {
 	return route, nil
 }
 
-func filterRoutesRole(ctx *gin.Context, routes []repo.Resource, roleIds []int64) []repo.Resource {
-	ids := lo.Map(routes, func(item repo.Resource, index int) int64 {
+func filterRoutesRole(ctx *gin.Context, routes []repo.Menu, roleIds []int64) []repo.Menu {
+	ids := lo.Map(routes, func(item repo.Menu, index int) int64 {
 		return item.ID
 	})
-	var rrList []repo.RoleResource
-	helper.DB.WithContext(ctx).Model(&repo.RoleResource{}).Where("resource_id in ?", ids).Find(&rrList)
+	var rrList []repo.RoleMenu
+	helper.DB.WithContext(ctx).Model(&repo.RoleMenu{}).Where("menu_id in ?", ids).Find(&rrList)
 
 	if len(rrList) > 0 {
 		// 菜单对应的角色限制
 		var rrMap = make(map[int64][]int64)
 		for _, rr := range rrList {
-			if _, ok := rrMap[rr.ResourceID]; ok {
-				rrMap[rr.ResourceID] = append(rrMap[rr.ResourceID], rr.RoleID)
+			if _, ok := rrMap[rr.MenuID]; ok {
+				rrMap[rr.MenuID] = append(rrMap[rr.MenuID], rr.RoleID)
 			} else {
-				rrMap[rr.ResourceID] = []int64{rr.RoleID}
+				rrMap[rr.MenuID] = []int64{rr.RoleID}
 			}
 		}
 
-		filterRoutes := make([]repo.Resource, 0, len(routes))
+		filterRoutes := make([]repo.Menu, 0, len(routes))
 		for _, route := range routes {
 			if rrIds, ok := rrMap[route.ID]; ok {
 				if lo.Some(rrIds, roleIds) {
@@ -271,7 +270,7 @@ func filterRoutesRole(ctx *gin.Context, routes []repo.Resource, roleIds []int64)
 	return routes
 }
 
-func processRoutes(routes []repo.Resource) []*entity.RouteMenu {
+func processRoutes(routes []repo.Menu) []*entity.RouteMenu {
 	routeMap := make(map[int64]*entity.RouteMenu)
 	for _, route := range routes {
 		var meta repo.RouteMeta

@@ -64,27 +64,27 @@ func DelRole(ctx *gin.Context) {
 	}
 }
 
-func GetRoleResource(ctx *gin.Context) {
+func GetRoleMenu(ctx *gin.Context) {
 	roleId := ctx.Query("roleId")
-	rscType := ctx.Query("rscType")
-	if roleId == "" || rscType == "" {
+	mode := ctx.Query("mode")
+	if roleId == "" || mode == "" {
 		render.JsonWithError(ctx, errcode.ErrParamInvalid)
 		return
 	}
 
-	types := mapResourceType(cast.ToInt(rscType))
-	if data, err := syssrv.GetRoleResource(ctx, cast.ToInt64(roleId), types); err != nil {
+	types := mapMode(cast.ToInt(mode))
+	if data, err := syssrv.GetRoleMenu(ctx, cast.ToInt64(roleId), types); err != nil {
 		render.JsonWithError(ctx, err)
 	} else {
 		render.JsonWithSuccess(ctx, data)
 	}
 }
 
-func BindRoleResource(ctx *gin.Context) {
+func BindRoleMenu(ctx *gin.Context) {
 	var req struct {
-		RoleId  int64   `json:"roleId" binding:"required"`
-		RscType int     `json:"rscType" binding:"required"`
-		Ids     []int64 `json:"ids"`
+		RoleId int64   `json:"roleId" binding:"required"`
+		Mode   int     `json:"mode" binding:"required"`
+		Ids    []int64 `json:"ids"`
 	}
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		zlog.Error(ctx, err.Error())
@@ -92,21 +92,21 @@ func BindRoleResource(ctx *gin.Context) {
 		return
 	}
 
-	types := mapResourceType(req.RscType)
-	if err := syssrv.BindRoleResource(ctx, req.RoleId, types, req.Ids); err != nil {
+	types := mapMode(req.Mode)
+	if err := syssrv.BindRoleMenu(ctx, req.RoleId, types, req.Ids); err != nil {
 		render.JsonWithError(ctx, err)
 	} else {
 		render.JsonWithSuccess(ctx, "ok")
 	}
 }
 
-func mapResourceType(rscType int) []int {
+func mapMode(mode int) []int {
 	// 1-菜单 2-按钮
-	rscMap := map[int][]int{
-		1: {consts.ResourceDir, consts.ResourceMenu},
-		2: {consts.ResourceButton},
+	modeMap := map[int][]int{
+		1: {consts.MenuDir, consts.MenuOpt},
+		2: {consts.MenuButton},
 	}
-	if rsc, ok := rscMap[rscType]; ok {
+	if rsc, ok := modeMap[mode]; ok {
 		return rsc
 	}
 	return []int{0}

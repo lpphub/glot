@@ -26,8 +26,8 @@ func Handle(r *gin.Engine) {
 		sys.GET("/role/all", system.ListAllRole)
 		sys.POST("/role/post", system.SaveRole)
 		sys.POST("/role/del", system.DelRole)
-		sys.GET("/role/resource", system.GetRoleResource)
-		sys.POST("/role/bind_resource", system.BindRoleResource)
+		sys.GET("/role/menu", system.GetRoleMenu)
+		sys.POST("/role/bind_menu", system.BindRoleMenu)
 
 		sys.POST("/menu/post", system.SaveMenu)
 		sys.GET("/menu/list", system.PageListMenu)

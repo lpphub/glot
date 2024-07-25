@@ -39,11 +39,11 @@ func (u User) GetButtons(ctx *gin.Context) (codes []string) {
 		return
 	}
 
-	var rscIds []int64
-	helper.DB.WithContext(ctx).Model(&RoleResource{}).Where("role_id in ?", roleIds).Pluck("resource_id", &rscIds)
-	if len(rscIds) > 0 {
-		helper.DB.WithContext(ctx).Model(&Resource{}).Where("id in ? and resource_type = ? and status=?", rscIds,
-			consts.ResourceButton, consts.StatusOn).Pluck("code", &codes)
+	var menuIds []int64
+	helper.DB.WithContext(ctx).Model(&RoleMenu{}).Where("role_id in ?", roleIds).Pluck("menu_id", &menuIds)
+	if len(menuIds) > 0 {
+		helper.DB.WithContext(ctx).Model(&Menu{}).Where("id in ? and mode = ? and status=?", menuIds,
+			consts.RouteMenu, consts.StatusOn).Pluck("code", &codes)
 	}
 	return
 }

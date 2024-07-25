@@ -6,25 +6,25 @@ import (
 	"glot/helper"
 )
 
-type Resource struct {
+type Menu struct {
 	BaseModel
-	ID           int64  `gorm:"id" json:"id"`
-	ParentID     int64  `gorm:"parent_id" json:"parentId"`
-	ResourceType int8   `gorm:"resource_type" json:"resourceType"`     // 资源类型 1-目录 2-菜单 3-页面按钮
-	Name         string `gorm:"name" json:"name"`                      // 资源名称
-	Code         string `gorm:"code" json:"code"`                      // 资源唯一标识
-	RouteName    string `gorm:"route_name" json:"routeName,omitempty"` // 路由名称
-	RoutePath    string `gorm:"route_path" json:"routePath,omitempty"` // 路由路径
-	Component    string `gorm:"component" json:"component,omitempty"`  // 页面组件
-	Meta         string `gorm:"meta" json:"-"`                         // 资源元数据
-	Status       int8   `gorm:"status" json:"status"`                  // 状态 1-启用 2-禁用
-	Sort         int    `gorm:"sort" json:"sort"`                      // 排序
+	ID        int64  `gorm:"id" json:"id"`
+	ParentID  int64  `gorm:"parent_id" json:"parentId"`
+	Mode      int8   `gorm:"mode" json:"mode"`                      // 类型 1-目录 2-菜单 3-页面按钮
+	Name      string `gorm:"name" json:"name"`                      // 资源名称
+	Code      string `gorm:"code" json:"code"`                      // 资源唯一标识
+	RouteName string `gorm:"route_name" json:"routeName,omitempty"` // 路由名称
+	RoutePath string `gorm:"route_path" json:"routePath,omitempty"` // 路由路径
+	Component string `gorm:"component" json:"component,omitempty"`  // 页面组件
+	Meta      string `gorm:"meta" json:"-"`                         // 资源元数据
+	Status    int8   `gorm:"status" json:"status"`                  // 状态 1-启用 2-禁用
+	Sort      int    `gorm:"sort" json:"sort"`                      // 排序
 }
 
-type ResourceTree struct {
-	Resource
+type MenuTree struct {
+	Menu
 	RouteMeta
-	Children []*ResourceTree `json:"children"`
+	Children []*MenuTree `json:"children"`
 }
 
 type RouteMeta struct {
@@ -49,31 +49,31 @@ type KV struct {
 	Value string `json:"value"`
 }
 
-func (Resource) TableName() string {
-	return "tb_resource"
+func (Menu) TableName() string {
+	return "tb_menu"
 }
 
-func (r Resource) getChildren(ctx *gin.Context, resourceTypes ...int) (res []Resource) {
-	_tx := helper.DB.WithContext(ctx).Model(&Resource{}).Where("parent_id =?", r.ID)
+func (r Menu) getChildren(ctx *gin.Context, resourceTypes ...int) (res []Menu) {
+	_tx := helper.DB.WithContext(ctx).Model(&Menu{}).Where("parent_id =?", r.ID)
 	if len(resourceTypes) > 0 {
-		_tx.Where("resource_type in ?", resourceTypes)
+		_tx.Where("mode in ?", resourceTypes)
 	}
 	_tx.Find(&res)
 	return
 }
 
-func (r Resource) GetResourceTree(ctx *gin.Context) *ResourceTree {
+func (r Menu) GetMenuTree(ctx *gin.Context) *MenuTree {
 	var meta RouteMeta
 	_ = jsoniter.UnmarshalFromString(r.Meta, &meta)
-	tree := &ResourceTree{
-		Resource:  r,
+	tree := &MenuTree{
+		Menu:      r,
 		RouteMeta: meta,
 	}
 	// 递归子项
 	children := r.getChildren(ctx)
 	if len(children) > 0 {
 		for _, child := range children {
-			tree.Children = append(tree.Children, child.GetResourceTree(ctx))
+			tree.Children = append(tree.Children, child.GetMenuTree(ctx))
 		}
 	}
 	return tree
