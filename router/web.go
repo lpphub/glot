@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"glot/handler"
 	"glot/handler/system"
+	"glot/handler/tenant"
 	"glot/middleware"
 )
 
@@ -34,6 +35,11 @@ func Handle(r *gin.Engine) {
 		sys.GET("/menu/tree", system.GetMenuTree)
 		sys.GET("/menu/button", system.GetMenuButton)
 		sys.POST("/menu/del", system.DelMenu)
+	}
+
+	tnt := r.Group("/tenant", middleware.CheckAuthLogin)
+	{
+		tnt.GET("/list", tenant.PageListTenant)
 	}
 
 }
