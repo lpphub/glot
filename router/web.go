@@ -40,6 +40,8 @@ func Handle(r *gin.Engine) {
 	tnt := r.Group("/tenant", middleware.CheckAuthLogin)
 	{
 		tnt.GET("/list", tenant.PageListTenant)
+		tnt.POST("/post", tenant.SaveTenant)
+		tnt.GET("/role_scope", tenant.ListRoleScope)
 	}
 
 }

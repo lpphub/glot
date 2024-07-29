@@ -261,8 +261,6 @@ func filterRoutesRole(ctx *gin.Context, routes []repo.Menu, roleIds []int64) []r
 				if lo.Some(rrIds, roleIds) {
 					filterRoutes = append(filterRoutes, route)
 				}
-			} else { // 无角色限制
-				filterRoutes = append(filterRoutes, route)
 			}
 		}
 		return filterRoutes

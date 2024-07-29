@@ -7,6 +7,7 @@ import (
 	"glot/component/utils"
 	"glot/helper"
 	repo "glot/repository"
+	"glot/service/consts"
 	"glot/service/domain"
 )
 
@@ -17,11 +18,11 @@ func Login(ctx *gin.Context, username, password string) (string, error) {
 		return "", errcode.ErrUserNotFound
 	}
 
-	//var tenant repo.Tenant
-	//helper.DB.WithContext(ctx).Where("id=? and status=1", user.TenantId).Take(&tenant)
-	//if tenant.ID == 0 {
-	//	return "", errcode.ErrUserNotFound
-	//}
+	var tenant repo.Tenant
+	helper.DB.WithContext(ctx).Where("id=? and status=?", user.TenantId, consts.StatusOn).Take(&tenant)
+	if tenant.ID == 0 {
+		return "", errcode.ErrUserNotFound
+	}
 
 	us, _ := jsoniter.MarshalToString(map[string]int64{
 		"uid":      user.ID,

@@ -41,10 +41,10 @@ func PageListUser(ctx *gin.Context, param domain.UserQuery) (*domain.Pager, erro
 	if total > 0 {
 		_db.Order("id desc").Scopes(repo.Paginate(param.Pn, param.Ps)).Find(&list)
 
-		userList := make([]domain.User, 0)
+		userList := make([]*domain.User, 0)
 		for _, user := range list {
 			roles := user.GetRoleCodes(ctx)
-			userList = append(userList, domain.User{
+			userList = append(userList, &domain.User{
 				User:  user,
 				Roles: roles,
 			})
@@ -86,7 +86,7 @@ func SaveUser(ctx *gin.Context, param domain.User) error {
 					RoleID: id,
 				})
 			}
-			return tx.Create(urList).Error
+			return tx.Create(&urList).Error
 		}
 		return nil
 	})
