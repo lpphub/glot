@@ -5,7 +5,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"glot/component/errcode"
 	"glot/component/utils"
-	"glot/helper"
 	repo "glot/repository"
 	"glot/service/consts"
 	"glot/service/domain"
@@ -13,13 +12,13 @@ import (
 
 func Login(ctx *gin.Context, username, password string) (string, error) {
 	var user repo.User
-	helper.DB.WithContext(ctx).Where("username=? and password=? and status=1", username, password).Take(&user)
+	repo.GetDB(ctx).Where("username=? and password=? and status=1", username, password).Take(&user)
 	if user.ID == 0 {
 		return "", errcode.ErrUserNotFound
 	}
 
 	var tenant repo.Tenant
-	helper.DB.WithContext(ctx).Where("id=? and status=?", user.TenantId, consts.StatusOn).Take(&tenant)
+	repo.GetDB(ctx).Where("id=? and status=?", user.TenantId, consts.StatusOn).Take(&tenant)
 	if tenant.ID == 0 {
 		return "", errcode.ErrUserNotFound
 	}
@@ -33,7 +32,7 @@ func Login(ctx *gin.Context, username, password string) (string, error) {
 
 func GetLoginUser(ctx *gin.Context, uid int64) (*domain.LoginUser, error) {
 	var user repo.User
-	repo.DBWithTenant(ctx).Where("id=?", uid).Take(&user)
+	repo.GetDBWithTenant(ctx).Where("id=?", uid).Take(&user)
 	if user.ID > 0 {
 		roles := user.GetRoleCodes(ctx)
 		buttons := user.GetButtons(ctx)

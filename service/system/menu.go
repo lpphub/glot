@@ -5,7 +5,6 @@ import (
 	jsoniter "github.com/json-iterator/go"
 	"github.com/samber/lo"
 	"glot/component/errcode"
-	"glot/helper"
 	repo "glot/repository"
 	"glot/service/consts"
 	"glot/service/domain"
@@ -17,7 +16,7 @@ func PageListMenu(ctx *gin.Context, param domain.PageQuery) (*domain.Pager, erro
 		total int64
 		list  []repo.Menu
 	)
-	_db := helper.DB.WithContext(ctx).Model(repo.Menu{}).Where("parent_id = 0 and mode in ?", consts.RouteMenu)
+	_db := repo.GetDB(ctx).Model(repo.Menu{}).Where("parent_id = 0 and mode in ?", consts.RouteMenu)
 
 	if err := _db.Count(&total).Error; err != nil {
 		return nil, err
@@ -73,7 +72,7 @@ func convertMenu(ctx *gin.Context, tree *repo.MenuTree) *domain.MenuVO {
 
 func GetMenuTree(ctx *gin.Context) ([]*domain.MenuTreeVO, error) {
 	var list []repo.Menu
-	helper.DB.WithContext(ctx).Model(repo.Menu{}).Where("mode in ? and status =?",
+	repo.GetDB(ctx).Model(repo.Menu{}).Where("mode in ? and status =?",
 		consts.RouteMenu, consts.StatusOn).Order("sort, id").Find(&list)
 
 	menuMap := make(map[int64]*domain.MenuTreeVO)
@@ -98,7 +97,7 @@ func GetMenuTree(ctx *gin.Context) ([]*domain.MenuTreeVO, error) {
 
 func GetMenuButton(ctx *gin.Context) ([]*domain.MenuButtonVO, error) {
 	var list []repo.Menu
-	helper.DB.WithContext(ctx).Model(repo.Menu{}).Where("mode =? and status =?",
+	repo.GetDB(ctx).Model(repo.Menu{}).Where("mode =? and status =?",
 		consts.MenuButton, consts.StatusOn).Find(&list)
 
 	buttons := make([]*domain.MenuButtonVO, 0)
@@ -115,7 +114,7 @@ func GetMenuButton(ctx *gin.Context) ([]*domain.MenuButtonVO, error) {
 func SaveMenu(ctx *gin.Context, param domain.MenuVO) error {
 	// todo 参数校验
 	// 开启事务
-	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return repo.GetDB(ctx).Transaction(func(tx *gorm.DB) error {
 		var (
 			meta       = param.RouteMeta
 			metaStr, _ = jsoniter.MarshalToString(meta)
@@ -148,15 +147,13 @@ func SaveMenu(ctx *gin.Context, param domain.MenuVO) error {
 		}
 
 		// 菜单下的按钮
-		if len(param.Buttons) == 0 {
-			var btnIds []int64
-			tx.Model(&repo.Menu{}).Where("parent_id =? and mode =?", base.ID, consts.MenuButton).
-				Pluck("id", &btnIds)
-			if len(btnIds) > 0 {
-				tx.Delete(&repo.Menu{}, "id in ?", btnIds)
-				tx.Delete(&repo.RoleMenu{}, "menu_id in ?", btnIds)
-			}
-		} else {
+		var btnIds []int64
+		tx.Model(&repo.Menu{}).Where("parent_id =? and mode =?", base.ID, consts.MenuButton).Pluck("id", &btnIds)
+		if len(btnIds) > 0 {
+			tx.Delete(&repo.Menu{}, "id in ?", btnIds)
+			tx.Delete(&repo.RoleMenu{}, "menu_id in ?", btnIds)
+		}
+		if len(param.Buttons) > 0 {
 			btnList := make([]*repo.Menu, 0, len(param.Buttons))
 			for _, btn := range param.Buttons {
 				var count int64
@@ -174,7 +171,7 @@ func SaveMenu(ctx *gin.Context, param domain.MenuVO) error {
 					btnList = append(btnList, mbtn)
 				}
 			}
-			return tx.Create(btnList).Error
+			return tx.Create(&btnList).Error
 		}
 		return nil
 	})
@@ -182,12 +179,12 @@ func SaveMenu(ctx *gin.Context, param domain.MenuVO) error {
 
 func DelMenu(ctx *gin.Context, ids []int64) error {
 	var count int64
-	helper.DB.WithContext(ctx).Model(&repo.Menu{}).Where("parent_id in ? and mode in ?", ids, consts.RouteMenu).Count(&count)
+	repo.GetDB(ctx).Model(&repo.Menu{}).Where("parent_id in ? and mode in ?", ids, consts.RouteMenu).Count(&count)
 	if count > 0 { // 避免递归删除
 		return errcode.ErrToast.Sprintf("请先删除选中项下的子菜单")
 	}
 
-	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return repo.GetDB(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Delete(&repo.Menu{}, "id in ?", ids).Error; err != nil {
 			return err
 		}
@@ -210,24 +207,24 @@ func DelMenu(ctx *gin.Context, ids []int64) error {
 
 func IsExistRoute(ctx *gin.Context, routeName string) (bool, error) {
 	var count int64
-	helper.DB.WithContext(ctx).Model(&repo.Menu{}).Where("route_name = ?", routeName).Count(&count)
+	repo.GetDB(ctx).Model(&repo.Menu{}).Where("route_name = ?", routeName).Count(&count)
 	return count > 0, nil
 }
 
 // GetUserRouteMenus 查询用户授权的菜单路由
 func GetUserRouteMenus(ctx *gin.Context, uid int64) (*domain.UserRoute, error) {
 	var user repo.User
-	repo.DBWithTenant(ctx).Where("id=?", uid).Take(&user)
+	repo.GetDBWithTenant(ctx).Where("id=?", uid).Take(&user)
 	if user.ID == 0 {
 		return nil, errcode.ErrUserNotFound
 	}
 
 	var routes []repo.Menu
-	helper.DB.WithContext(ctx).Model(&repo.Menu{}).Where("mode in ? and status =?", consts.RouteMenu, consts.StatusOn).Find(&routes)
+	repo.GetDB(ctx).Model(&repo.Menu{}).Where("mode in ? and status =?", consts.RouteMenu, consts.StatusOn).Find(&routes)
 
 	// 过滤角色限制
 	var roleIds []int64
-	helper.DB.WithContext(ctx).Model(&repo.UserRole{}).Where("user_id=?", uid).Pluck("role_id", &roleIds)
+	repo.GetDB(ctx).Model(&repo.UserRole{}).Where("user_id=?", uid).Pluck("role_id", &roleIds)
 	filterRoutes := filterRoutesRole(ctx, routes, roleIds)
 
 	route := &domain.UserRoute{
@@ -242,7 +239,7 @@ func filterRoutesRole(ctx *gin.Context, routes []repo.Menu, roleIds []int64) []r
 		return item.ID
 	})
 	var rrList []repo.RoleMenu
-	helper.DB.WithContext(ctx).Model(&repo.RoleMenu{}).Where("menu_id in ?", ids).Find(&rrList)
+	repo.GetDB(ctx).Model(&repo.RoleMenu{}).Where("menu_id in ?", ids).Find(&rrList)
 
 	if len(rrList) > 0 {
 		// 菜单对应的角色限制

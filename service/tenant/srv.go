@@ -2,7 +2,6 @@ package tenant
 
 import (
 	"github.com/gin-gonic/gin"
-	"glot/helper"
 	repo "glot/repository"
 	"glot/service/consts"
 	"glot/service/domain"
@@ -14,7 +13,7 @@ func PageList(ctx *gin.Context, param domain.TenantQuery) (*domain.Pager, error)
 		total int64
 		list  []repo.Tenant
 	)
-	_db := helper.DB.WithContext(ctx).Model(repo.Tenant{})
+	_db := repo.GetDB(ctx).Model(repo.Tenant{})
 
 	if param.Name != "" {
 		_db.Where("name like ?", "%"+param.Name+"%")
@@ -50,7 +49,7 @@ func SaveTenant(ctx *gin.Context, param domain.TenantVO) error {
 		tenant    = param.Tenant
 		roleCodes = param.Roles
 	)
-	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return repo.GetDB(ctx).Transaction(func(tx *gorm.DB) error {
 		if tenant.ID > 0 {
 			tenant.FitUpdated(ctx)
 			if err := tx.Updates(tenant).Error; err != nil {
@@ -84,11 +83,11 @@ func SaveTenant(ctx *gin.Context, param domain.TenantVO) error {
 
 func ListRoleScope(ctx *gin.Context) ([]repo.Role, error) {
 	var roleIds []int64
-	repo.DBWithTenant(ctx).Model(&repo.TenantRole{}).Pluck("role_id", &roleIds)
+	repo.GetDBWithTenant(ctx).Model(&repo.TenantRole{}).Pluck("role_id", &roleIds)
 	if len(roleIds) == 0 {
 		return nil, nil
 	}
 	var list []repo.Role
-	helper.DB.WithContext(ctx).Model(repo.Role{}).Where("id in ? and status =?", roleIds, consts.StatusOn).Find(&list)
+	repo.GetDB(ctx).Model(repo.Role{}).Where("id in ? and status =?", roleIds, consts.StatusOn).Find(&list)
 	return list, nil
 }

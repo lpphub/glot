@@ -3,7 +3,6 @@ package system
 import (
 	"github.com/gin-gonic/gin"
 	"glot/component/errcode"
-	"glot/helper"
 	repo "glot/repository"
 	"glot/service/consts"
 	"glot/service/domain"
@@ -15,7 +14,7 @@ func PageListRole(ctx *gin.Context, param domain.RoleQuery) (*domain.Pager, erro
 		total int64
 		list  []repo.Role
 	)
-	_db := helper.DB.WithContext(ctx).Model(repo.Role{})
+	_db := repo.GetDB(ctx).Model(repo.Role{})
 
 	if param.Name != "" {
 		_db.Where("name like ?", "%"+param.Name+"%")
@@ -39,22 +38,22 @@ func PageListRole(ctx *gin.Context, param domain.RoleQuery) (*domain.Pager, erro
 
 func ListAllRole(ctx *gin.Context) ([]repo.Role, error) {
 	var list []repo.Role
-	helper.DB.WithContext(ctx).Model(repo.Role{}).Where("status =?", consts.StatusOn).Find(&list)
+	repo.GetDB(ctx).Model(repo.Role{}).Where("status =?", consts.StatusOn).Find(&list)
 	return list, nil
 }
 
 func SaveRole(ctx *gin.Context, role repo.Role) error {
 	if role.ID > 0 {
 		role.FitUpdated(ctx)
-		return helper.DB.WithContext(ctx).Updates(role).Error
+		return repo.GetDB(ctx).Updates(role).Error
 	} else {
 		role.FitCreated(ctx)
-		return helper.DB.WithContext(ctx).Create(&role).Error
+		return repo.GetDB(ctx).Create(&role).Error
 	}
 }
 
 func DelRole(ctx *gin.Context, ids []int64) error {
-	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return repo.GetDB(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Delete(&repo.Role{}, "id in ?", ids).Error; err != nil {
 			return err
 		}
@@ -64,9 +63,9 @@ func DelRole(ctx *gin.Context, ids []int64) error {
 
 func GetRoleMenu(ctx *gin.Context, roleId int64, rscTypes []int) (ids []int64, err error) {
 	var menuIds []int64
-	helper.DB.WithContext(ctx).Model(&repo.RoleMenu{}).Where("role_id =?", roleId).Pluck("menu_id", &menuIds)
+	repo.GetDB(ctx).Model(&repo.RoleMenu{}).Where("role_id =?", roleId).Pluck("menu_id", &menuIds)
 	if len(menuIds) > 0 {
-		helper.DB.WithContext(ctx).Model(&repo.Menu{}).Where("id in ? and mode in ? and status=?",
+		repo.GetDB(ctx).Model(&repo.Menu{}).Where("id in ? and mode in ? and status=?",
 			menuIds, rscTypes, consts.StatusOn).Pluck("id", &ids)
 	}
 	return
@@ -74,12 +73,12 @@ func GetRoleMenu(ctx *gin.Context, roleId int64, rscTypes []int) (ids []int64, e
 
 func BindRoleMenu(ctx *gin.Context, roleId int64, modes []int, ids []int64) error {
 	var role repo.Role
-	helper.DB.WithContext(ctx).Where("id =?", roleId).Take(&role)
+	repo.GetDB(ctx).Where("id =?", roleId).Take(&role)
 	if role.ID == 0 {
 		return errcode.ErrParamInvalid
 	}
 
-	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return repo.GetDB(ctx).Transaction(func(tx *gorm.DB) error {
 		//删掉原记录重新保存
 		delSql := "DELETE rm FROM tb_role_menu rm JOIN tb_menu m ON rm.menu_id = m.id " +
 			"WHERE rm.role_id =? and m.mode in ?"

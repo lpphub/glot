@@ -2,7 +2,6 @@ package system
 
 import (
 	"github.com/gin-gonic/gin"
-	"glot/helper"
 	"glot/middleware"
 	repo "glot/repository"
 	"glot/service/domain"
@@ -14,7 +13,7 @@ func PageListUser(ctx *gin.Context, param domain.UserQuery) (*domain.Pager, erro
 		total int64
 		list  []repo.User
 	)
-	_db := repo.DBWithTenant(ctx).Model(repo.User{})
+	_db := repo.GetDB(ctx).Model(repo.User{})
 
 	if param.Uid > 0 {
 		_db.Where("id = ?", param.Uid)
@@ -56,17 +55,18 @@ func PageListUser(ctx *gin.Context, param domain.UserQuery) (*domain.Pager, erro
 
 func SaveUser(ctx *gin.Context, param domain.User) error {
 	// 开启事务
-	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return repo.GetDB(ctx).Transaction(func(tx *gorm.DB) error {
 		user := param.User
+		if user.TenantId == 0 {
+			user.TenantId = middleware.GetLoginTenantId(ctx)
+		}
 		if user.ID > 0 {
-			// todo 判断数据是否存在
 			user.FitUpdated(ctx)
-			if err := tx.Updates(user).Error; err != nil {
+			if err := tx.Omit("tenant_id").Updates(user).Error; err != nil {
 				return err
 			}
 		} else {
 			user.Password = "123456"
-			user.TenantId = middleware.GetLoginTenantId(ctx)
 			user.FitCreated(ctx)
 			if err := tx.Create(&user).Error; err != nil {
 				return err
@@ -93,7 +93,7 @@ func SaveUser(ctx *gin.Context, param domain.User) error {
 }
 
 func DelUser(ctx *gin.Context, ids []int64) error {
-	return helper.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+	return repo.GetDB(ctx).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Delete(&repo.User{}, "id in ?", ids).Error; err != nil {
 			return err
 		}

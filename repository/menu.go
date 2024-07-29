@@ -3,7 +3,6 @@ package repository
 import (
 	"github.com/gin-gonic/gin"
 	jsoniter "github.com/json-iterator/go"
-	"glot/helper"
 )
 
 type Menu struct {
@@ -54,7 +53,7 @@ func (Menu) TableName() string {
 }
 
 func (r Menu) getChildren(ctx *gin.Context, resourceTypes ...int) (res []Menu) {
-	_tx := helper.DB.WithContext(ctx).Model(&Menu{}).Where("parent_id =?", r.ID)
+	_tx := GetDB(ctx).Model(&Menu{}).Where("parent_id =?", r.ID)
 	if len(resourceTypes) > 0 {
 		_tx.Where("mode in ?", resourceTypes)
 	}

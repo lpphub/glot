@@ -2,7 +2,6 @@ package repository
 
 import (
 	"github.com/gin-gonic/gin"
-	"glot/helper"
 	"glot/service/consts"
 )
 
@@ -24,9 +23,9 @@ func (*Tenant) TableName() string {
 
 func (t *Tenant) GetRoleCodes(ctx *gin.Context) (roles []string) {
 	var roleIds []int64
-	helper.DB.WithContext(ctx).Model(&TenantRole{}).Where("tenant_id=?", t.ID).Pluck("role_id", &roleIds)
+	GetDB(ctx).Model(&TenantRole{}).Where("tenant_id=?", t.ID).Pluck("role_id", &roleIds)
 	if len(roleIds) > 0 {
-		helper.DB.WithContext(ctx).Model(Role{}).Where("id in ? and status=?", roleIds, consts.StatusOn).
+		GetDB(ctx).Model(Role{}).Where("id in ? and status=?", roleIds, consts.StatusOn).
 			Pluck("code", &roles)
 	}
 	return

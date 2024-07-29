@@ -2,7 +2,6 @@ package repository
 
 import (
 	"github.com/gin-gonic/gin"
-	"glot/helper"
 	"glot/service/consts"
 )
 
@@ -15,7 +14,7 @@ type User struct {
 	Email    string `gorm:"email" json:"email"`
 	Nickname string `gorm:"nickname" json:"nickname"`
 	Status   int8   `gorm:"status" json:"status"`
-	TenantId int64  `gorm:"tenant_id" json:"-"`
+	TenantId int64  `gorm:"tenant_id" json:"tenantId"`
 }
 
 func (User) TableName() string {
@@ -23,27 +22,31 @@ func (User) TableName() string {
 }
 
 func (u User) GetRoleCodes(ctx *gin.Context) (roles []string) {
+	roles = make([]string, 0)
+
 	var roleIds []int64
-	helper.DB.WithContext(ctx).Model(&UserRole{}).Where("user_id=?", u.ID).Pluck("role_id", &roleIds)
+	GetDB(ctx).Model(&UserRole{}).Where("user_id=?", u.ID).Pluck("role_id", &roleIds)
 	if len(roleIds) > 0 {
-		helper.DB.WithContext(ctx).Model(Role{}).Where("id in ? and status=?", roleIds, consts.StatusOn).
+		GetDB(ctx).Model(Role{}).Where("id in ? and status=?", roleIds, consts.StatusOn).
 			Pluck("code", &roles)
 	}
 	return
 }
 
 func (u User) GetButtons(ctx *gin.Context) (codes []string) {
+	codes = make([]string, 0)
+
 	var roleIds []int64
-	helper.DB.WithContext(ctx).Model(&UserRole{}).Where("user_id=?", u.ID).Pluck("role_id", &roleIds)
+	GetDB(ctx).Model(&UserRole{}).Where("user_id=?", u.ID).Pluck("role_id", &roleIds)
 	if len(roleIds) == 0 {
 		return
 	}
 
 	var menuIds []int64
-	helper.DB.WithContext(ctx).Model(&RoleMenu{}).Where("role_id in ?", roleIds).Pluck("menu_id", &menuIds)
+	GetDB(ctx).Model(&RoleMenu{}).Where("role_id in ?", roleIds).Pluck("menu_id", &menuIds)
 	if len(menuIds) > 0 {
-		helper.DB.WithContext(ctx).Model(&Menu{}).Where("id in ? and mode = ? and status=?", menuIds,
-			consts.RouteMenu, consts.StatusOn).Pluck("code", &codes)
+		GetDB(ctx).Model(&Menu{}).Where("id in ? and mode = ? and status=?", menuIds,
+			consts.MenuButton, consts.StatusOn).Pluck("code", &codes)
 	}
 	return
 }

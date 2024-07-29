@@ -38,17 +38,20 @@ func Paginate(pn, ps int) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-func DBWithTenant(ctx *gin.Context) *gorm.DB {
-	return helper.DB.WithContext(ctx).Scopes(ScopeTenant(ctx))
+func GetDB(ctx *gin.Context) *gorm.DB {
+	return helper.DB.WithContext(ctx)
+}
+
+func GetDBWithTenant(ctx *gin.Context) *gorm.DB {
+	return GetDB(ctx).Scopes(ScopeTenant(ctx))
 }
 
 func ScopeTenant(ctx *gin.Context) func(db *gorm.DB) *gorm.DB {
-	return func(db *gorm.DB) *gorm.DB {
-		return db.Where("tenant_id=?", middleware.GetLoginTenantId(ctx))
-	}
+	tId := middleware.GetLoginTenantId(ctx)
+	return ScopeTenantId(tId)
 }
 
-func ScopeTenantId(tenantId int) func(db *gorm.DB) *gorm.DB {
+func ScopeTenantId(tenantId int64) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		return db.Where("tenant_id=?", tenantId)
 	}
