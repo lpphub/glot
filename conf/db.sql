@@ -1,5 +1,13 @@
+# ************************************************************
+# Sequel Pro SQL dump
+# Version 5425
+#
+# https://www.sequelpro.com/
+# https://github.com/sequelpro/sequelpro
+#
+# Host: 127.0.0.1 (MySQL 8.3.0)
 # Database: glot
-# Generation Time: 2024-07-29 08:06:32 +0000
+# Generation Time: 2024-07-29 09:10:15 +0000
 # ************************************************************
 
 
@@ -112,15 +120,14 @@ VALUES
     (87,101,123),
     (88,101,127),
     (89,101,119),
-    (90,102,120),
-    (91,102,121),
-    (92,102,119),
     (93,103,119),
-    (97,105,120),
-    (98,105,121),
-    (99,105,127),
-    (100,105,119),
-    (105,101,130);
+    (105,101,130),
+    (106,102,119),
+    (107,105,119),
+    (108,105,120),
+    (109,105,121),
+    (110,105,127),
+    (111,105,122);
 
 /*!40000 ALTER TABLE `tb_role_menu` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -146,7 +153,7 @@ CREATE TABLE `tb_tenant` (
                              `updated_at` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
                              PRIMARY KEY (`id`),
                              UNIQUE KEY `uq_code` (`code`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='角色表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='租户表';
 
 LOCK TABLES `tb_tenant` WRITE;
 /*!40000 ALTER TABLE `tb_tenant` DISABLE KEYS */;
@@ -170,7 +177,7 @@ CREATE TABLE `tb_tenant_role` (
                                   `tenant_id` bigint NOT NULL COMMENT '租户id',
                                   `role_id` bigint NOT NULL COMMENT '角色id',
                                   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户角色表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='租户角色表';
 
 LOCK TABLES `tb_tenant_role` WRITE;
 /*!40000 ALTER TABLE `tb_tenant_role` DISABLE KEYS */;
