@@ -54,10 +54,15 @@ func SaveRole(ctx *gin.Context, role repo.Role) error {
 
 func DelRole(ctx *gin.Context, ids []int64) error {
 	return repo.GetDB(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Delete(&repo.Role{}, "id in ?", ids).Error; err != nil {
+		err := tx.Delete(&repo.Role{}, "id in ?", ids).Error
+		if err != nil {
 			return err
 		}
-		return tx.Delete(&repo.UserRole{}, "role_id in ?", ids).Error
+		err = tx.Delete(&repo.UserRole{}, "role_id in ?", ids).Error
+		if err != nil {
+			return err
+		}
+		return tx.Delete(&repo.TenantRole{}, "role_id in ?", ids).Error
 	})
 }
 
