@@ -3,6 +3,8 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"glot/handler"
+	"glot/handler/ads/facebook"
+	"glot/handler/ads/google"
 	"glot/handler/system"
 	"glot/handler/tenant"
 	"glot/middleware"
@@ -42,6 +44,15 @@ func Handle(r *gin.Engine) {
 		tnt.GET("/list", tenant.PageListTenant)
 		tnt.POST("/post", tenant.SaveTenant)
 		tnt.GET("/role_scope", tenant.ListRoleScope)
+	}
+
+	ads := r.Group("/ads")
+	{
+		ads.GET("/facebook/get_auth_url", middleware.CheckAuthLogin, facebook.GetAuthUrl)
+		ads.GET("/facebook/oauth2callback", facebook.AuthCallback)
+
+		ads.GET("/google/get_auth_url", middleware.CheckAuthLogin, google.GetAuthUrl)
+		ads.GET("/google/oauth2callback", google.AuthCallback)
 	}
 
 }
