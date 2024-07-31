@@ -57,7 +57,13 @@ func DelRole(ctx *gin.Context, ids []int64) error {
 		if err := tx.Delete(&repo.Role{}, "id in ?", ids).Error; err != nil {
 			return err
 		}
-		return tx.Delete(&repo.UserRole{}, "role_id in ?", ids).Error
+		if err := tx.Delete(&repo.UserRole{}, "role_id in ?", ids).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&repo.RoleMenu{}, "role_id in ?", ids).Error; err != nil {
+			return err
+		}
+		return tx.Delete(&repo.TenantRole{}, "role_id in ?", ids).Error
 	})
 }
 
