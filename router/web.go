@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/gin-gonic/gin"
 	"glot/handler"
+	"glot/handler/oauthads"
 	"glot/handler/system"
 	"glot/handler/tenant"
 	"glot/middleware"
@@ -42,6 +43,14 @@ func Handle(r *gin.Engine) {
 		tnt.GET("/list", tenant.PageListTenant)
 		tnt.POST("/post", tenant.SaveTenant)
 		tnt.GET("/role_scope", tenant.ListRoleScope)
+	}
+
+	oauth := r.Group("/oauth")
+	{
+		oauth.GET("/get_auth_url", middleware.CheckAuthLogin, oauthads.GetOAuthUrl)
+
+		oauth.GET("/facebook/oauth2callback", oauthads.FacebookOAuthCallback)
+		oauth.GET("/google/oauth2callback", oauthads.GoogleOAuthCallback)
 	}
 
 }
