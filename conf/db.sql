@@ -7,7 +7,7 @@
 #
 # Host: 127.0.0.1 (MySQL 8.3.0)
 # Database: glot
-# Generation Time: 2024-07-29 09:10:15 +0000
+# Generation Time: 2024-09-02 13:23:52 +0000
 # ************************************************************
 
 
@@ -58,7 +58,9 @@ VALUES
     (122,120,2,'角色管理','manage_role','manage_role','/manage/role','view.manage_role','{\"i18nKey\":\"route.manage_role\",\"iconType\":1,\"icon\":\"carbon:user-role\",\"layout\":\"\",\"page\":\"\",\"order\":4,\"pathParam\":\"\"}',1,4,'107','2024-07-24 12:48:58','','2024-07-24 12:48:58'),
     (123,120,2,'菜单管理','manage_menu','manage_menu','/manage/menu','view.manage_menu','{\"i18nKey\":\"route.manage_menu\",\"iconType\":1,\"icon\":\"material-symbols:route\",\"layout\":\"\",\"page\":\"\",\"order\":5,\"pathParam\":\"\"}',1,5,'107','2024-07-24 12:49:49','','2024-07-24 12:49:49'),
     (127,0,2,'租户管理','tenant','tenant','/tenant','layout.base$view.tenant','{\"i18nKey\":\"route.tenant\",\"iconType\":1,\"icon\":\"ic:twotone-business\",\"order\":6}',1,6,'107','2024-07-25 19:46:28','107','2024-07-26 17:13:46'),
-    (130,121,3,'用户租户','user-tenant','','','','',1,0,'107','2024-07-29 14:52:51','','2024-07-29 14:52:51');
+    (130,121,3,'用户租户','user-tenant','','','','',1,0,'107','2024-07-29 14:52:51','','2024-07-29 14:52:51'),
+    (131,0,1,'团队管理','team','team','/team','layout.base','{\"i18nKey\":\"route.team\",\"iconType\":1,\"icon\":\"material-symbols:team-dashboard\",\"order\":7}',1,7,'107','2024-09-02 21:06:20','107','2024-09-02 21:22:38'),
+    (132,131,2,'授权管理','team_oauth','team_oauth','/team/oauth','view.team_oauth','{\"i18nKey\":\"route.team_oauth\",\"iconType\":1,\"icon\":\"mdi:account-key\",\"order\":8}',1,8,'107','2024-09-02 21:07:03','107','2024-09-02 21:23:15');
 
 /*!40000 ALTER TABLE `tb_menu` ENABLE KEYS */;
 UNLOCK TABLES;
@@ -114,12 +116,6 @@ LOCK TABLES `tb_role_menu` WRITE;
 
 INSERT INTO `tb_role_menu` (`id`, `role_id`, `menu_id`)
 VALUES
-    (84,101,120),
-    (85,101,121),
-    (86,101,122),
-    (87,101,123),
-    (88,101,127),
-    (89,101,119),
     (93,103,119),
     (105,101,130),
     (106,102,119),
@@ -127,7 +123,15 @@ VALUES
     (108,105,120),
     (109,105,121),
     (110,105,127),
-    (111,105,122);
+    (111,105,122),
+    (120,101,119),
+    (121,101,120),
+    (122,101,121),
+    (123,101,122),
+    (124,101,123),
+    (125,101,127),
+    (126,101,131),
+    (127,101,132);
 
 /*!40000 ALTER TABLE `tb_role_menu` ENABLE KEYS */;
 UNLOCK TABLES;
