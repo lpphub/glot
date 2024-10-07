@@ -7,6 +7,7 @@ import (
 	"glot/component/errcode"
 	"glot/helper"
 	"glot/router"
+	"net/http"
 )
 
 func main() {
@@ -24,5 +25,8 @@ func main() {
 
 	router.Handle(app)
 
-	_ = app.Run(":8080")
+	ware.ListenAndServe(&http.Server{
+		Addr:    ":8080",
+		Handler: app,
+	})
 }

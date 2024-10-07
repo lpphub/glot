@@ -20,5 +20,5 @@ type mysqlConf struct {
 }
 
 func InitConf() {
-	env.LoadConf("conf.yaml", "", &RConf)
+	env.LoadConf("conf/conf.yaml", &RConf)
 }
